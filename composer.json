@@ -12,6 +12,6 @@
         "psr-4": {"labalityowo\\kcp\\": "src/"}
     },
     "require": {
-        "labalityowo/bytebuffer": "^1.0.0"
+        "wpjscc/bytebuffer": "^1.0.0"
     }
 }
