@@ -1,5 +1,5 @@
 {
-    "name": "labalityowo/kcp-php",
+    "name": "wpjscc/kcp-php",
     "description": "Implementation of https://github.com/boba-ps/kcp-ts to PHP",
     "type": "library",
     "license": "MIT",
