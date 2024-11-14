@@ -234,11 +234,9 @@ class KCP
         if ($sn - $this->sndUna < 0 || $sn - $this->sndNxt >= 0) {
             return;
         }
-        $bufSize = count($this->sndBuf);
-        for ($i = 0; $i < $bufSize; $i++) {
-            $seg = $this->sndBuf[$i];
+        foreach ($this->sndBuf as $key => $seg) {
             if ($seg->getSn() === $sn) {
-                unset($this->sndBuf[$i]);
+                unset($this->sndBuf[$key]);
             } else {
                 if ($sn < $seg->getSn()) {
                     break;
