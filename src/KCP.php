@@ -370,8 +370,8 @@ class KCP
                 $delta = $this->rxsRtt - $rtt;
             }
 
-            $this->rxRttVal = ((3 * $this->rxRttVal + $delta) / 4);
-            $this->rxsRtt = ((7 * $this->rxsRtt + $rtt) / 8);
+            $this->rxRttVal = (int)((3 * $this->rxRttVal + $delta) / 4);
+            $this->rxsRtt = (int)((7 * $this->rxsRtt + $rtt) / 8);
 
             if ($this->rxsRtt < 1) {
                 $this->rxsRtt = 1;
@@ -476,7 +476,7 @@ class KCP
                 if ($this->incr < $mss) {
                     $this->incr = $mss;
                 }
-                $this->incr += (($mss * $mss) / $this->incr) + ($mss / 16);
+                $this->incr += (int)(($mss * $mss) / $this->incr) + (int)($mss / 16);
                 if (($this->cWnd + 1) * $mss <= $this->incr) {
                     $this->cWnd += 1;
                 }
