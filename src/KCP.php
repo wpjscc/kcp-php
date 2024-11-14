@@ -115,8 +115,7 @@ class KCP
         private readonly int $token, // User token
         private \Closure $output, //Output
         private bool $stream = false // Enable streamer mode
-    )
-    {
+    ) {
         $this->sndUna = 0;
         $this->sndNxt = 0;
         $this->rcvNxt = 0;
@@ -163,9 +162,9 @@ class KCP
         }
 
         $len = 0;
-        foreach ($this->rcvQueue as $segment){
+        foreach ($this->rcvQueue as $segment) {
             $len += $segment->getData()->getLength();
-            if($segment->getFrg() === 0){
+            if ($segment->getFrg() === 0) {
                 break;
             }
         }
@@ -208,7 +207,8 @@ class KCP
     {
         while (count($this->rcvBuf) !== 0) {
             $nrcvQueue = count($this->rcvQueue);
-            $seg = $this->rcvBuf[0];
+            $firsyKey = array_key_first($this->rcvBuf);
+            $seg = $this->rcvBuf[$firsyKey];
             if ($seg->getSn() === $this->rcvNxt && $nrcvQueue < $this->rcvWnd) {
                 $this->rcvNxt += 1;
             } else {
@@ -221,7 +221,9 @@ class KCP
 
     private function shrinkBuf()
     {
-        $seg = $this->sndBuf[0] ?? null;
+
+        $seg = $this->sndBuf[array_key_first($this->sndBuf)] ?? null;
+
         if ($seg instanceof Segment) {
             $this->sndUna = $seg->getSn();
         } else {
@@ -248,7 +250,7 @@ class KCP
     private function parseUna(int $una)
     {
         while (count($this->sndBuf) !== 0) {
-            $seg = $this->sndBuf[0];
+            $seg = $this->sndBuf[array_key_first($this->sndBuf)];
             if ($una - $seg->getSn() > 0) {
                 array_shift($this->sndBuf);
             } else {
@@ -285,8 +287,10 @@ class KCP
         }
         $repeat = false;
         $newIndex = count($this->rcvBuf);
+        $keys = array_keys($this->rcvBuf);
         for ($i = count($this->rcvBuf) - 1; $i >= 0; $i--) {
-            $segment = $this->rcvBuf[$i];
+            $key = $keys[$i];
+            $segment = $this->rcvBuf[$key];
             if ($segment->getSn() === $newSeg->getSn()) {
                 $repeat = true;
                 break;
@@ -494,7 +498,8 @@ class KCP
         }
     }
 
-    public function flush(){
+    public function flush()
+    {
         if (!$this->updated) {
             return;
         }
@@ -505,7 +510,7 @@ class KCP
         $segment->setUna($this->rcvNxt);
         $segment->setToken($this->token);
         $writeIndex = 0;
-        foreach ($this->acklist as [$sn, $ts]){
+        foreach ($this->acklist as [$sn, $ts]) {
             $this->makeSpace($writeIndex, self::KCP_OVERHEAD);
             $segment->setSn($sn);
             $segment->setTs($ts);
@@ -531,13 +536,11 @@ class KCP
             $this->probe |= self::KCP_ASK_SEND;
         }
 
-        if (($this->probe & self::KCP_ASK_SEND) != 0)
-        {
+        if (($this->probe & self::KCP_ASK_SEND) != 0) {
             $segment->setCmd(self::KCP_CMD_WASK);
         }
 
-        if (($this->probe & self::KCP_ASK_TELL) != 0)
-        {
+        if (($this->probe & self::KCP_ASK_TELL) != 0) {
             $segment->setCmd(self::KCP_CMD_WINS);
         }
         $this->makeSpace($writeIndex, self::KCP_OVERHEAD);
@@ -642,7 +645,7 @@ class KCP
 
     private function makeSpace(int &$index, int $space): void
     {
-        if($index + $space > $this->mtu){
+        if ($index + $space > $this->mtu) {
             ($this->output)($this->buf->slice(0, $index));
             $index = 0;
         }
@@ -650,7 +653,7 @@ class KCP
 
     private function flushBuffer(int &$index): void
     {
-        if($index > 0){
+        if ($index > 0) {
             ($this->output)($this->buf->slice(0, $index));
         }
     }
@@ -658,18 +661,18 @@ class KCP
     public function update(int $current)
     {
         $this->current = $current;
-        if(!$this->updated) {
+        if (!$this->updated) {
             $this->updated = true;
             $this->tsFlush = $this->current;
         }
         $slap = $this->current - $this->tsFlush;
-        if($slap >= 10000 || $slap < -10000) {
+        if ($slap >= 10000 || $slap < -10000) {
             $this->tsFlush = $this->current;
             $slap = 0;
         }
-        if($slap >= 0) {
+        if ($slap >= 0) {
             $this->tsFlush += $this->interval;
-            if($this->current - $this->tsFlush >= 0) {
+            if ($this->current - $this->tsFlush >= 0) {
                 $this->tsFlush = $this->current + $this->interval;
             }
             $this->flush();
@@ -693,10 +696,10 @@ class KCP
         }
 
         $tmFlush = $tsFlush - $current;
-        foreach ($this->sndBuf as $seg){
+        foreach ($this->sndBuf as $seg) {
             $diff = $seg->getResendTs() - $current;
-            if($diff <= 0) return 0;
-            if($diff < $tmPacket) $tmPacket = $diff;
+            if ($diff <= 0) return 0;
+            if ($diff < $tmPacket) $tmPacket = $diff;
         }
         return min($tmPacket, $tmFlush, $this->interval);
     }
@@ -714,11 +717,12 @@ class KCP
         $this->interval = max(10, min($interval, 5000));
     }
 
-    public function setNodelay(bool $nodelay, int $resend, bool $nc){
+    public function setNodelay(bool $nodelay, int $resend, bool $nc)
+    {
         $this->nodelay = $nodelay;
-        if($nodelay){
+        if ($nodelay) {
             $this->rxMinRto = self::KCP_RTO_NDL;
-        }else{
+        } else {
             $this->rxMinRto = self::KCP_RTO_MIN;
         }
 
@@ -726,7 +730,8 @@ class KCP
         $this->nocwnd = $nc;
     }
 
-    public function setWndSize(int $sndWnd, int $rcvWnd){
+    public function setWndSize(int $sndWnd, int $rcvWnd)
+    {
         $this->sndWnd = Utils::unsigned_shift_right(($sndWnd << 16), 16);
         $this->rcvWnd = max(Utils::unsigned_shift_right(($rcvWnd << 16), 16), self::KCP_WND_RCV);
     }
@@ -736,11 +741,13 @@ class KCP
         return count($this->sndBuf) + count($this->sndQueue);
     }
 
-    public function getSndWnd(){
+    public function getSndWnd()
+    {
         return $this->sndWnd;
     }
 
-    public function getRcvWnd(){
+    public function getRcvWnd()
+    {
         return $this->rcvWnd;
     }
 
@@ -754,7 +761,8 @@ class KCP
         $this->fastResend = $fastResend;
     }
 
-    public function getHeaderLen(){
+    public function getHeaderLen()
+    {
         return self::KCP_OVERHEAD;
     }
 
@@ -768,7 +776,8 @@ class KCP
         return $this->mss;
     }
 
-    public function setMaxResend(int $deadLink){
+    public function setMaxResend(int $deadLink)
+    {
         $this->deadLink = $deadLink;
     }
 
